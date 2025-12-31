@@ -1,1 +1,249 @@
+ArgoCD Mastery: From GitOps Basics to Advanced Deployments
 
+ArgoCD is a powerful GitOps continuous delivery tool for Kubernetes. It enables declarative deployments, progressive delivery, multi-cluster management, and automated rollbacks, making it a cornerstone of modern cloud-native workflows.
+
+1️⃣ Introduction to GitOps
+
+GitOps is a paradigm where Git is the single source of truth for your infrastructure and applications.
+
+Core Principles
+Principle	Description
+Declarative Configs	Store manifests (YAML/Helm/Kustomize) in Git
+Automated Sync	Git changes are automatically applied to the cluster
+Observability	Monitor cluster state vs Git repository
+Rollbacks	Revert changes via Git commits
+Benefits
+
+✅ Version-controlled deployments
+✅ Auditable changes
+✅ Faster and safer rollbacks
+
+Official Docs: GitOps Principles
+
+2️⃣ ArgoCD Architecture
+
+ArgoCD consists of control plane and Kubernetes-native components.
+
+Component	Description
+API Server	Central management API and UI
+Controller	Continuously compares Git and cluster state
+Repository Server	Accesses Git repositories
+Application CRD	Declarative representation of apps
+Dex (Optional)	SSO integration for authentication
+
+3️⃣ Installing ArgoCD
+# Install in the argocd namespace
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# Access ArgoCD server (port-forward)
+kubectl port-forward svc/argocd-server -n argocd 8080:443
+
+Login
+# Get initial admin password
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+argocd login localhost:8080 --username admin --password <password>
+
+4️⃣ Creating Applications in ArgoCD
+
+Applications in ArgoCD represent a Git repository and target cluster namespace.
+
+argocd app create web-app \
+  --repo https://github.com/myorg/web-app.git \
+  --path manifests \
+  --dest-server https://kubernetes.default.svc \
+  --dest-namespace dev \
+  --sync-policy automated
+
+kubectl Example (CRD)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: web-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/myorg/web-app.git
+    path: manifests
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+5️⃣ App of Apps Pattern
+
+Organize multiple applications hierarchically
+
+Parent Application deploys child Applications via Application CRDs
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: parent-app
+  namespace: argocd
+spec:
+  source:
+    repoURL: https://github.com/myorg/apps.git
+    path: parent
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+
+✅ Helps manage microservice ecosystems
+
+6️⃣ Helm Integration with ArgoCD
+
+ArgoCD natively supports Helm charts
+
+spec:
+  source:
+    repoURL: https://github.com/myorg/helm-charts.git
+    chart: web-app
+    targetRevision: 1.0.0
+
+
+✅ Use for templated deployments, versioned releases
+
+7️⃣ Kustomize Integration
+
+ArgoCD supports Kustomize overlays
+
+spec:
+  source:
+    repoURL: https://github.com/myorg/kustomize-app.git
+    path: overlays/dev
+
+
+✅ Ideal for environment-specific configurations
+
+8️⃣ ApplicationSets
+
+ApplicationSets allow dynamic creation of multiple apps from a single template
+
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: web-app-set
+spec:
+  generators:
+    - list:
+        elements:
+          - cluster: cluster1
+            namespace: dev
+          - cluster: cluster2
+            namespace: prod
+  template:
+    metadata:
+      name: '{{cluster}}-web-app'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/myorg/web-app.git
+        path: manifests
+      destination:
+        server: '{{cluster}}'
+        namespace: '{{namespace}}'
+
+
+✅ Automates multi-cluster deployments
+
+9️⃣ Sync Policies & Strategies
+Strategy	Description
+Automated	Syncs Git changes automatically
+Manual	Requires manual approval
+Prune	Deletes resources removed from Git
+Self-Heal	Restores drifted resources to Git state
+10️⃣ Progressive Delivery with ArgoCD Rollouts
+
+Integrates with Argo Rollouts for canary and blue-green deployments
+
+Allows metric-based automated promotion
+
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: web-app-rollout
+spec:
+  strategy:
+    canary:
+      steps:
+      - setWeight: 10
+      - pause: {duration: 5m}
+      - setWeight: 50
+      - pause: {duration: 10m}
+
+
+✅ Enables controlled deployments with metrics-based automation
+
+11️⃣ Multi-cluster Management
+
+ArgoCD can manage multiple clusters from a single control plane
+
+argocd cluster add <context-name>
+
+
+✅ Centralized GitOps for multi-region or multi-cloud clusters
+
+12️⃣ ArgoCD Security & RBAC
+
+Supports SSO, OAuth, LDAP, and OIDC
+
+RBAC rules define who can manage apps
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: argocd
+  name: app-manager
+rules:
+- apiGroups: ["argoproj.io"]
+  resources: ["applications"]
+  verbs: ["get","create","update","delete"]
+
+
+✅ Enforce least privilege principle
+
+13️⃣ ArgoCD Notifications & Webhooks
+
+Trigger notifications on sync success/failure, rollbacks, or health changes
+
+Integrates with Slack, Teams, email, or custom webhooks
+
+apiVersion: argoproj.io/v1alpha1
+kind: Notification
+metadata:
+  name: web-app-notify
+spec:
+  template: slack
+  triggers:
+  - on-sync-succeeded
+
+14️⃣ ArgoCD Best Practices
+
+✅ Use Git as the single source of truth
+✅ Enable automated sync for low-risk apps
+✅ Use ApplicationSets for multi-cluster/microservice management
+✅ Integrate with Helm/Kustomize for flexible deployments
+✅ Monitor ArgoCD metrics and logs for drift and failures
+
+Interview Questions
+
+Q: What is the App of Apps pattern in ArgoCD?
+A: A parent Application manages multiple child Applications for hierarchical deployment.
+
+Q: How do you implement progressive delivery with ArgoCD?
+A: Use Argo Rollouts with canary or blue-green strategies and metric-based promotion.
+
+Q: Difference between manual and automated sync policies?
+A: Manual requires explicit approval to deploy changes; automated sync applies changes automatically from Git.
+
+Q: How does ArgoCD integrate with Helm and Kustomize?
+A: Helm charts or Kustomize overlays can be specified as the source in Application CRDs for templated deployments.
+
+Official Docs: ArgoCD Documentation
