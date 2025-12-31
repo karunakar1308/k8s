@@ -1,4 +1,4 @@
-Kubernetes Workloads – A Practical, Interview-Ready Guide
+Part3: Kubernetes Workloads – A Practical, Interview-Ready Guide
 
 Kubernetes workloads are the core building blocks that define how your applications run, scale, heal, and evolve inside a cluster. Whether you’re deploying a stateless web app, a stateful database, a background job, or an agent running on every node — Kubernetes has a workload type designed for it.
 
