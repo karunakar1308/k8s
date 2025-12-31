@@ -1,3 +1,5 @@
+PART 7: KUBERNETES SCALING & AUTOSCALING
+
 Kubernetes Scaling & Autoscaling: HPA, VPA, Cluster Autoscaler, and KEDA
 
 Scaling is one of Kubernetes’ most powerful features. With proper autoscaling, your workloads can handle spikes in demand efficiently, save resources, and maintain performance. This guide covers all major scaling strategies.
