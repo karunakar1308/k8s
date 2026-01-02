@@ -228,12 +228,14 @@ Best Practices
 ✅ Monitor application state via ArgoCD dashboard
 
 ✅ Summary Table
-Deployment Strategy	Type	Use Case	Key Tools
-Rolling Update	Incremental	Default deployment	kubectl
-Blue-Green	Dual environment	Zero-downtime release	Service selector switch
-Canary	Gradual rollout	Testing new version	Istio VirtualService
-A/B Testing	Feature-based	UX testing	Istio header routing
-GitOps	Declarative	CI/CD automation	ArgoCD, FluxCD
+| Deployment Strategy | Type             | Use Case              | Key Tools               |
+| ------------------- | ---------------- | --------------------- | ----------------------- |
+| Rolling Update      | Incremental      | Default deployment    | kubectl                 |
+| Blue-Green          | Dual environment | Zero-downtime release | Service selector switch |
+| Canary              | Gradual rollout  | Testing new version   | Istio VirtualService    |
+| A/B Testing         | Feature-based    | UX testing            | Istio header routing    |
+| GitOps              | Declarative      | CI/CD automation      | ArgoCD, FluxCD          |
+
 Interview Questions
 
 Q: Difference between Rolling Update and Canary deployment?
@@ -250,8 +252,7 @@ A: Using VirtualService header-based routing to send a subset of users to the ne
 
 Official Docs:
 
-Kubernetes Deployments
+- [Kubernetes Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
+- [Istio Traffic Management](https://istio.io/latest/docs/tasks/traffic-management/)
+- [ArgoCD GitOps](https://argo-cd.readthedocs.io/en/stable/user-guide/)
 
-Istio Traffic Management
-
-ArgoCD GitOps
