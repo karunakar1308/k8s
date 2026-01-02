@@ -35,6 +35,7 @@ Learn more:
 • Containers vs VMs: https://www.docker.com/resources/what-container/
 
 Interview Scenario:
+
 Q: "Explain the difference between containers and virtual machines."
 
 A: "Containers virtualize the operating system, sharing the host kernel, while VMs virtualize hardware, each running a full OS. This makes containers lighter (MBs vs GBs), faster to start (seconds vs minutes), and more resource-efficient. However, VMs provide stronger isolation. In my experience, I've used containers for microservices deployments where we needed fast scaling and VMs for workloads requiring complete OS isolation."
@@ -44,21 +45,25 @@ A: "Containers virtualize the operating system, sharing the host kernel, while V
 2. DOCKER ARCHITECTURE & COMPONENTS
 
 Docker Architecture Overview
+
 Docker uses a client-server architecture with three main components:
 
 1. Docker Client (docker CLI)
+   
 • Command-line interface for users
 • Sends commands to Docker daemon via REST API
 • Can communicate with remote daemons
 • Commands: docker build, docker run, docker push, etc.
 
-2. Docker Daemon (dockerd)
+3. Docker Daemon (dockerd)
+   
 • Background service running on the host
 • Manages Docker objects: images, containers, networks, volumes
 • Listens to Docker API requests
 • Can communicate with other daemons for distributed systems
 
-3. Docker Registry
+4. Docker Registry
+   
 • Stores Docker images
 • Docker Hub: public registry (default)
 • Private registries: AWS ECR, Google GCR, Azure ACR, Harbor, Artifactory
