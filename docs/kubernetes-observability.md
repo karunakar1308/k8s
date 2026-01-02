@@ -6,12 +6,16 @@ Kubernetes makes deploying applications easy—but observing them in production 
 
 Logs capture what happens inside your cluster and applications. Centralized logging is essential for debugging and auditing.
 
-Popular Tools
-Tool	Use Case
-Fluentd	Log collector and aggregator
-Fluent Bit	Lightweight log forwarder
-EFK Stack (Elasticsearch + Fluentd/Bit + Kibana)	Centralized logging, search, and visualization
+### Popular tools
+
+| Tool                                           | Use case                                      |
+|-----------------------------------------------|-----------------------------------------------|
+| Fluentd                                       | Log collector and aggregator                  |
+| Fluent Bit                                    | Lightweight log forwarder                     |
+| EFK Stack (Elasticsearch + Fluentd/Bit + Kibana) | Centralized logging, search, and visualization |
+
 Example: Fluent Bit DaemonSet
+
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
