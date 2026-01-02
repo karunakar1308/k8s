@@ -3,6 +3,7 @@ PART 1: DOCKER FUNDAMENTALS & ADVANCED
 1. INTRODUCTION TO CONTAINERIZATION
 
 What is Containerization?
+
 Containerization is a lightweight form of virtualization that packages an application and its dependencies together in an isolated environment called a container. Unlike traditional virtual machines (VMs), containers share the host OS kernel, making them more efficient and faster to start.
 
 Key Differences: Containers vs Virtual Machines
