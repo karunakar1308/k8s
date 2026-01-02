@@ -30,6 +30,7 @@ Learn more:
 
 Interview Scenario:
 Q: "Explain the difference between containers and virtual machines."
+
 A: "Containers virtualize the operating system, sharing the host kernel, while VMs virtualize hardware, each running a full OS. This makes containers lighter (MBs vs GBs), faster to start (seconds vs minutes), and more resource-efficient. However, VMs provide stronger isolation. In my experience, I've used containers for microservices deployments where we needed fast scaling and VMs for workloads requiring complete OS isolation."
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
