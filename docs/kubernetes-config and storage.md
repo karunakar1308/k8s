@@ -30,8 +30,8 @@ Property files
 
 Feature flags
 
-1.1 Creating a ConfigMap
-From YAML
+1.1 Creating a ConfigMap From YAML
+
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -43,8 +43,8 @@ data:
 kubectl apply -f configmap.yaml
 kubectl get configmap
 
-1.2 Using ConfigMaps in Pods
-As Environment Variables
+1.2 Using ConfigMaps in Pods As Environment Variables
+
 apiVersion: v1
 kind: Pod
 metadata:
@@ -87,8 +87,8 @@ TLS certificates
 
 📌 Secrets are Base64-encoded, not encrypted by default.
 
-2.1 Creating a Secret
-From YAML
+2.1 Creating a Secret From YAML
+
 apiVersion: v1
 kind: Secret
 metadata:
@@ -124,6 +124,7 @@ Released – Claim deleted
 Deleted – Storage reclaimed
 
 3.2 Persistent Volume YAML Example
+
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -154,6 +155,7 @@ A Persistent Volume Claim is a request for storage by a Pod.
 📌 Pods do not talk to PVs directly — they talk to PVCs.
 
 4.1 PVC YAML Example
+
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -169,6 +171,7 @@ kubectl get pvc
 kubectl describe pvc app-pvc
 
 4.2 Using PVC in a Pod
+
 apiVersion: v1
 kind: Pod
 metadata:
@@ -199,6 +202,7 @@ A StorageClass defines how storage is dynamically provisioned.
 📌 No need to manually create PVs in cloud environments.
 
 5.1 StorageClass YAML Example (AWS EBS)
+
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -212,6 +216,7 @@ volumeBindingMode: WaitForFirstConsumer
 kubectl get storageclass
 
 5.2 Dynamic PVC with StorageClass
+
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -250,13 +255,17 @@ Kafka
 
 Elasticsearch
 
-6.1 StatefulSet vs Deployment
-Feature	Deployment	StatefulSet
-Pod Identity	Random	Stable
-Storage	Shared	Per-Pod
-Scaling	Parallel	Ordered
-Use Case	Stateless apps	Stateful apps
+### 6.1 StatefulSet vs Deployment
+
+| Feature      | Deployment     | StatefulSet   |
+|-------------|----------------|---------------|
+| Pod identity| Random         | Stable        |
+| Storage     | Shared         | Per-pod       |
+| Scaling     | Parallel       | Ordered       |
+| Use case    | Stateless apps | Stateful apps |
+
 6.2 StatefulSet with VolumeClaimTemplates
+
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
