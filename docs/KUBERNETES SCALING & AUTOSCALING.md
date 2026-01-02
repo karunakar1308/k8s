@@ -143,4 +143,94 @@ kubectl logs deployment/cluster-autoscaler -n kube-system
 
 ### Best Practices
 
-- ✅ Confi
+- ✅ Configure node group min/max scaling limits.  
+- ✅ Ensure nodes are tagged correctly for CA.  
+- ❌ Do not forget resource requests/limits on pods (CA uses them for scheduling decisions).
+
+### Real-world Scenario
+
+During peak traffic, HPA increases pod replicas beyond current node capacity. Cluster Autoscaler adds new nodes to schedule these additional pods.
+
+Official docs: Cluster Autoscaler (provider-specific guides for EKS, GKE, AKS).
+
+---
+
+## 4. KEDA (Kubernetes Event-Driven Autoscaling)
+
+KEDA enables autoscaling based on external events, not just CPU/memory, making it ideal for event-driven or serverless-style workloads.
+
+### Key Features
+
+- Scales workloads based on metrics from Kafka, RabbitMQ, Azure Queue, Prometheus, and more.  
+- Integrates with HPA to drive pod scaling.  
+- Can scale deployments down to zero replicas.
+
+### YAML Example: Kafka-based Scaling
+
+```yaml
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: kafka-consumer
+  namespace: dev
+spec:
+  scaleTargetRef:
+    name: kafka-consumer-deployment
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: my-kafka:9092
+        consumerGroup: my-group
+        topic: my-topic
+        lagThreshold: "10"
+```
+
+### kubectl Commands
+
+```bash
+kubectl get scaledobject -n dev
+kubectl describe scaledobject kafka-consumer -n dev
+```
+
+### Best Practices
+
+- ✅ Use KEDA for event-driven workloads (queues, streams, events).  
+- ✅ Combine with HPA for hybrid metric-based scaling.  
+- ✅ Monitor scaling events and queue backlogs carefully.
+
+### Real-world Scenario
+
+A message-processing microservice consumes messages from Kafka. KEDA scales pods based on queue lag, scaling up when backlog grows and down when it drains.
+
+Official docs: https://keda.sh/
+
+---
+
+## Summary Table
+
+```md
+| Autoscaler         | Scales         | Metrics                               | Use Case                                   |
+|--------------------|---------------|----------------------------------------|--------------------------------------------|
+| HPA                | Pods          | CPU, memory, custom metrics            | Web apps with fluctuating load             |
+| VPA                | Resources     | Pod resource usage (CPU/memory)        | Stateful or memory-heavy workloads         |
+| Cluster Autoscaler | Nodes         | Pod scheduling & resource requests     | Cloud clusters with variable workloads     |
+| KEDA               | Pods          | External events (Kafka, queues, etc.)  | Event-driven microservices                 |
+```
+
+---
+
+## Interview Questions
+
+**Q:** Difference between HPA and VPA?  
+**A:** HPA scales the number of replicas, while VPA scales resource requests and limits (CPU/memory) per pod. 
+
+**Q:** Can HPA and VPA be used together?  
+**A:** Yes, but only if they do not target the same metric (for example, HPA on CPU and VPA on memory). 
+
+**Q:** How does Cluster Autoscaler decide to scale down a node?  
+**A:** If all pods on a node can be rescheduled elsewhere and the node is not running critical pods, the node can be removed.
+
+**Q:** What’s unique about KEDA?  
+**A:** It scales workloads based on external event sources (for example, Kafka, queues, Prometheus) and can scale down to zero replicas.
