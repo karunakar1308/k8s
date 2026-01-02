@@ -16,6 +16,9 @@ Logs capture what happens inside your cluster and applications. Centralized logg
 
 Example: Fluent Bit DaemonSet
 
+### Example: Fluent Bit DaemonSet
+
+```yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -32,19 +35,20 @@ spec:
     spec:
       serviceAccountName: fluent-bit
       containers:
-      - name: fluent-bit
-        image: fluent/fluent-bit:2.2
-        resources:
-          limits:
-            memory: 200Mi
-            cpu: 200m
-        volumeMounts:
-        - name: varlog
-          mountPath: /var/log
+        - name: fluent-bit
+          image: fluent/fluent-bit:2.2
+          resources:
+            limits:
+              memory: 200Mi
+              cpu: 200m
+          volumeMounts:
+            - name: varlog
+              mountPath: /var/log
       volumes:
-      - name: varlog
-        hostPath:
-          path: /var/log
+        - name: varlog
+          hostPath:
+            path: /var/log
+
 
 kubectl Commands
 # Check logs for a pod
