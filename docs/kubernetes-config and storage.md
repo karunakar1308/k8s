@@ -1,16 +1,11 @@
-Part 5: Kubernetes Configuration & Storage
+PART 5: KUBERNETES CONFIGURATION & STORAGE
 
 Decoupling configuration, securing secrets, and managing state the Kubernetes way
 
-Kubernetes’ power lies in how it cleanly separates application code, configuration, and data. This separation allows:
+One of Kubernetes’ biggest strengths is how cleanly it separates application code, configuration, and data.
+This separation enables immutable deployments, secure secret handling, and stateful workloads at scale.
 
-Immutable deployments
-
-Secure handling of secrets
-
-Stateful workloads at scale
-
-In this guide, we’ll explore Kubernetes’ approach to:
+In this section, we’ll cover how Kubernetes manages:
 
 Application configuration
 
@@ -25,7 +20,7 @@ What is a ConfigMap?
 
 A ConfigMap stores non-sensitive configuration data in key-value format, decoupled from container images.
 
-Use Cases:
+📌 Think of ConfigMaps as:
 
 Application configs
 
@@ -35,51 +30,58 @@ Property files
 
 Feature flags
 
-⚠️ ConfigMaps are not for secrets—use Secrets instead.
+1.1 Creating a ConfigMap From YAML
 
-Creating a ConfigMap from YAML
 apiVersion: v1
+
 kind: ConfigMap
+
 metadata:
+
   name: app-config
+
 data:
+
   APP_ENV: "production"
+  
   LOG_LEVEL: "info"
 
 kubectl apply -f configmap.yaml
 kubectl get configmap
 
-Using ConfigMaps in Pods
+1.2 Using ConfigMaps in Pods As Environment Variables
 
-As environment variables:
+apiVersion: v1
+kind: Pod
+metadata:
+  name: config-pod
+spec:
+  containers:
+    - name: app
+      image: nginx
+      env:
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: APP_ENV
 
-env:
-  - name: APP_ENV
-    valueFrom:
-      configMapKeyRef:
-        name: app-config
-        key: APP_ENV
-
-
-As files via volume mount:
-
+As Files (Volume Mount)
 volumes:
   - name: config-volume
     configMap:
       name: app-config
 
+Real-World Use Case
 
-Real-World Uses:
-
-✅ Externalize config for multiple environments
-✅ Update config without rebuilding images
-
-❌ Don’t store passwords (use Secrets)
+✅ Externalizing config for multiple environments
+✅ Updating config without rebuilding images
+❌ Storing passwords (use Secrets instead)
 
 2️⃣ Secrets
 What is a Secret?
 
-Secrets store sensitive information such as:
+A Secret stores sensitive information, such as:
 
 Passwords
 
@@ -89,9 +91,10 @@ Tokens
 
 TLS certificates
 
-Note: Secrets are Base64-encoded by default—not encrypted.
+📌 Secrets are Base64-encoded, not encrypted by default.
 
-Creating a Secret from YAML
+2.1 Creating a Secret From YAML
+
 apiVersion: v1
 kind: Secret
 metadata:
@@ -99,34 +102,35 @@ metadata:
 type: Opaque
 data:
   DB_USER: YWRtaW4=
-  DB_PASSWORD: c2VjdXJl
+  DB_PASSWORD:
 
 3️⃣ Persistent Volumes (PV)
 What is a Persistent Volume?
 
-A Persistent Volume is a cluster-wide storage resource.
+A Persistent Volume (PV) is a cluster-wide storage resource provisioned by an administrator or dynamically via a StorageClass.
 
-Key Points:
+📌 Think of a PV as:
 
-Acts like a disk in the cluster
+A disk in the cluster
 
 Independent of Pods
 
-Persists beyond Pod lifecycle
+Lives beyond Pod lifecycle
 
-PV Lifecycle
-
+3.1 PV Lifecycle
 Available → Bound → Released → Deleted
 
-Available: Ready to be claimed
 
-Bound: Attached to a PVC
+Available – Ready to be claimed
 
-Released: Claim deleted
+Bound – Attached to a PVC
 
-Deleted: Storage reclaimed
+Released – Claim deleted
 
-Example PV YAML
+Deleted – Storage reclaimed
+
+3.2 Persistent Volume YAML Example
+
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -143,20 +147,21 @@ spec:
 kubectl get pv
 kubectl describe pv pv-manual
 
-
-Use Cases:
+Real-World Use Case
 
 ✅ On-prem clusters
 ✅ Legacy storage systems
-
-❌ Not ideal for cloud-native dynamic environments
+❌ Not recommended for cloud-native dynamic environments
 
 4️⃣ Persistent Volume Claims (PVC)
 What is a PVC?
 
-A PVC is a request for storage by a Pod. Pods never talk directly to PVs—they interact through PVCs.
+A Persistent Volume Claim is a request for storage by a Pod.
 
-PVC YAML Example
+📌 Pods do not talk to PVs directly — they talk to PVCs.
+
+4.1 PVC YAML Example
+
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -171,29 +176,39 @@ spec:
 kubectl get pvc
 kubectl describe pvc app-pvc
 
-Using PVC in a Pod
-volumes:
-  - name: storage
-    persistentVolumeClaim:
-      claimName: app-pvc
+4.2 Using PVC in a Pod
 
-volumeMounts:
-  - mountPath: "/usr/share/nginx/html"
-    name: storage
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pvc-pod
+spec:
+  containers:
+    - name: app
+      image: nginx
+      volumeMounts:
+        - mountPath: "/usr/share/nginx/html"
+          name: storage
+  volumes:
+    - name: storage
+      persistentVolumeClaim:
+        claimName: app-pvc
 
-
-Use Cases:
+Real-World Use Case
 
 ✅ Databases
 ✅ File uploads
-✅ Logs that survive restarts
+✅ Logs that must survive restarts
 
 5️⃣ Storage Classes
 What is a StorageClass?
 
-A StorageClass defines how storage is dynamically provisioned, eliminating the need to manually create PVs—especially in cloud environments.
+A StorageClass defines how storage is dynamically provisioned.
 
-StorageClass YAML Example (AWS EBS)
+📌 No need to manually create PVs in cloud environments.
+
+5.1 StorageClass YAML Example (AWS EBS)
+
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -206,7 +221,8 @@ volumeBindingMode: WaitForFirstConsumer
 
 kubectl get storageclass
 
-Dynamic PVC with StorageClass
+5.2 Dynamic PVC with StorageClass
+
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -219,19 +235,17 @@ spec:
     requests:
       storage: 20Gi
 
-
-Benefits:
+Benefits
 
 ✅ Automatic provisioning
 ✅ Cloud-native
 ✅ Scalable
-
 ❌ Cloud-provider dependent
 
 6️⃣ StatefulSet Storage
 What is a StatefulSet?
 
-StatefulSets manage stateful applications requiring:
+A StatefulSet manages stateful applications requiring:
 
 Stable network identity
 
@@ -239,15 +253,25 @@ Stable storage
 
 Ordered deployment & scaling
 
-Examples: Databases (MySQL, PostgreSQL), Kafka, Elasticsearch
+📌 Examples:
 
-StatefulSet vs Deployment
-Feature	Deployment	StatefulSet
-Pod identity	Random	Stable
-Storage	Shared	Per-pod
-Scaling	Parallel	Ordered
-Use case	Stateless apps	Stateful apps
-StatefulSet with VolumeClaimTemplates
+Databases (MySQL, PostgreSQL)
+
+Kafka
+
+Elasticsearch
+
+### 6.1 StatefulSet vs Deployment
+
+| Feature      | Deployment     | StatefulSet   |
+|-------------|----------------|---------------|
+| Pod identity| Random         | Stable        |
+| Storage     | Shared         | Per-pod       |
+| Scaling     | Parallel       | Ordered       |
+| Use case    | Stateless apps | Stateful apps |
+
+6.2 StatefulSet with VolumeClaimTemplates
+
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -285,59 +309,62 @@ spec:
           requests:
             storage: 10Gi
 
+6.3 What Happens Behind the Scenes?
 
-Each Pod gets its own disk:
+For 3 replicas:
 
 mysql-0 → pvc-mysql-data-mysql-0
-
 mysql-1 → pvc-mysql-data-mysql-1
-
 mysql-2 → pvc-mysql-data-mysql-2
 
-7️⃣ Best Practices
 
+Each Pod gets its own disk — guaranteed.
+
+7️⃣ Best Practices
 ✅ Do This
 
-Use ConfigMaps for non-sensitive configs
-
-Use Secrets for credentials
-
-Use StorageClasses for dynamic provisioning
-
-Use StatefulSets for databases
+✅ Use ConfigMaps for non-sensitive config
+✅ Use Secrets for credentials
+✅ Use StorageClasses for dynamic provisioning
+✅ Use StatefulSets for databases
 
 ❌ Avoid This
 
-Hardcoding configs in images
-
-Storing secrets in ConfigMaps
-
-Using hostPath in production
-
-Using Deployments for stateful apps
+❌ Hardcoding configs in images
+❌ Storing secrets in ConfigMaps
+❌ Using hostPath in production
+❌ Deployments for stateful apps
 
 8️⃣ Interview Questions & Answers
-
 Q1: Difference between PV and PVC?
-A: PV is the actual storage resource; PVC is the request made by a Pod.
+
+A: PV is the actual storage resource, while PVC is a request for storage made by a Pod.
 
 Q2: Why StorageClasses?
-A: Enable dynamic provisioning—no manual PV management.
+
+A: StorageClasses allow dynamic provisioning of storage, eliminating the need for manually managing PVs.
 
 Q3: Can multiple Pods share a PVC?
-A: Only if access mode supports it (e.g., ReadWriteMany).
+
+A: Only if the access mode supports it (e.g., ReadWriteMany).
 
 Q4: Why StatefulSet for databases?
-A: Provides stable identity, persistent storage, and ordered deployment.
+
+A: StatefulSets provide stable identity, persistent storage, and ordered deployment required by databases.
 
 📌 Official Documentation
 
 ConfigMaps
+https://kubernetes.io/docs/concepts/configuration/configmap/
 
 Secrets
+https://kubernetes.io/docs/concepts/configuration/secret/
 
 Persistent Volumes
+https://kubernetes.io/docs/concepts/storage/persistent-volumes/
 
 Storage Classes
+https://kubernetes.io/docs/concepts/storage/storage-classes/
 
 StatefulSets
+https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
