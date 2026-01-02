@@ -16,7 +16,8 @@ Key Differences: Containers vs Virtual Machines
 | Portability | Less portable | Highly portable |
 | Performance | Slower | Near-native performance |
 
-Benefits of Containerization:
+Benefits of Containerization
+
 • Consistency across environments (dev, test, prod)
 • Faster deployment and scaling
 • Efficient resource utilization
