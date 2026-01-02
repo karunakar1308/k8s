@@ -7,6 +7,8 @@ Deploying applications in Kubernetes is easy—but deploying safely and efficien
 Rolling updates are Kubernetes’ default deployment strategy. Pods are updated incrementally, ensuring service availability.
 
 YAML Example: Rolling Update
+
+```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -33,6 +35,7 @@ spec:
         image: myregistry/web-app:v2
         ports:
         - containerPort: 80
+```
 
 kubectl Commands
 # Apply rolling update
