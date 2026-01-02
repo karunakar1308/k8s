@@ -239,15 +239,19 @@ Best Practices
 Interview Questions
 
 Q: Difference between Rolling Update and Canary deployment?
+
 A: Rolling Update replaces pods gradually without traffic splitting. Canary deployment routes only a portion of traffic to new version.
 
 Q: How do Blue-Green deployments enable fast rollback?
+
 A: The previous environment (Blue) remains intact; switching back is as simple as updating the service selector.
 
 Q: What is GitOps?
+
 A: A declarative deployment model using Git as the single source of truth, with automated sync to Kubernetes clusters.
 
 Q: How can Istio help with A/B testing?
+
 A: Using VirtualService header-based routing to send a subset of users to the new version.
 
 Official Docs:
