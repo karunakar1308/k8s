@@ -1,6 +1,4 @@
-# 📘 Formatted Example: Docker & Kubernetes Documentation
-
-> This is a demonstration of proper markdown formatting with color-graded headlines, commands, and code blocks for better readability.
+ Docker & Kubernetes Documentation
 
 ---
 
