@@ -1,47 +1,52 @@
-PART 6: KUBERNETES SECURITY
+# PART 6: Kubernetes Security
 
-Kubernetes is a powerful platform for container orchestration, but with great power comes great responsibility—security. Whether you’re an aspiring DevOps engineer, a cloud security professional, or prepping for interviews, understanding Kubernetes security is critical. In this guide, we’ll cover 7 core topics, including RBAC, Service Accounts, Pod Security Standards, Network Policies, Admission Controllers, Security Contexts, and Secrets Management.
+Kubernetes is a powerful platform for container orchestration, but with that power comes responsibility for securing clusters, workloads, and data. This guide walks through core security primitives you will use in real clusters and interviews alike.
 
-1️⃣ RBAC (Role-Based Access Control)
+---
 
-Kubernetes RBAC controls who can do what within your cluster. It’s essential for restricting access to resources and implementing the principle of least privilege.
+## 1. RBAC (Role-Based Access Control)
 
-Key Concepts
-Resource Type	Scope	Description
-Role	Namespace	Grants permissions within a namespace
-ClusterRole	Cluster-wide	Grants permissions cluster-wide or across namespaces
-RoleBinding	Namespace	Assigns Role to a user/service account in a namespace
-ClusterRoleBinding	Cluster-wide	Assigns ClusterRole to a user/service account globally
-YAML Examples
+Kubernetes RBAC controls who can do what in your cluster. It is central to enforcing least privilege and avoiding over-privileged users and workloads.
 
-Role Example (Namespace-scoped)
+### Key concepts
 
+| Resource type      | Scope        | Description                                                 |
+|--------------------|-------------|-------------------------------------------------------------|
+| Role               | Namespace   | Grants permissions within a single namespace               |
+| ClusterRole        | Cluster     | Grants permissions cluster-wide or across namespaces       |
+| RoleBinding        | Namespace   | Binds a Role to a user or service account in a namespace   |
+| ClusterRoleBinding | Cluster     | Binds a ClusterRole to a user or service account globally  |
+
+### YAML examples
+
+**Role (namespace-scoped)**
+
+```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   namespace: dev
   name: pod-reader
 rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get", "watch", "list"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "watch", "list"]
 
-
-RoleBinding Example
-
+Role Binding
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: read-pods-binding
   namespace: dev
 subjects:
-- kind: User
-  name: jane
-  apiGroup: rbac.authorization.k8s.io
+  - kind: User
+    name: jane
+    apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: Role
   name: pod-reader
   apiGroup: rbac.authorization.k8s.io
+
 
 
 ClusterRole Example
