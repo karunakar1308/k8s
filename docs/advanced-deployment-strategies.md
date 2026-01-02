@@ -72,6 +72,8 @@ Switch traffic to Green when ready
 Keep Blue as a rollback option
 
 YAML Example with Service Switching
+
+```yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -83,6 +85,7 @@ spec:
   ports:
   - port: 80
     targetPort: 80
+```
 
 
 Switching the selector from version: blue → version: green routes traffic to the new pods.
@@ -102,6 +105,8 @@ A payment gateway updates its API without downtime by switching traffic from blu
 Canary deployments release new versions gradually, routing only a portion of traffic to the new pods.
 
 YAML Example (Istio VirtualService)
+
+```yaml
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -119,6 +124,7 @@ spec:
         host: web-app
         subset: v2
       weight: 10
+```
 
 Best Practices
 
@@ -143,6 +149,8 @@ Uses metrics like click-through rate or conversion
 Can be implemented via Istio VirtualService routing by headers
 
 Example: Header-based Routing
+
+```yaml
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -163,6 +171,7 @@ spec:
     - destination:
         host: web-app
         subset: v1
+```
 
 Best Practices
 
