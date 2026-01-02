@@ -188,13 +188,15 @@ An e-commerce site shows a new checkout flow to 10% of users to measure conversi
 GitOps is a methodology for declarative infrastructure and application deployments via Git repositories.
 
 Key Principles
-Principle	Description
-Git as Source of Truth	All configs stored in Git
-Automated Deployment	CI/CD pipeline applies changes automatically
-Observability	Changes in Git are reflected in cluster state
-Rollback	Revert changes via Git commit
-Popular Tools
 
+| Principle | Description |
+|-----------|-------------|
+| Git as Source of Truth | All configs stored in Git |
+| Automated Deployment | CI/CD pipeline applies changes automatically |
+| Observability | Changes in Git are reflected in cluster state |
+| Rollback | Revert changes via Git commit |
+
+Popular Tools
 ArgoCD
 
 FluxCD
