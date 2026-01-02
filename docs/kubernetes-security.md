@@ -348,11 +348,10 @@ Best Practices
 
 Official Docs:
 
-Kubernetes Secrets
+- [Kubernetes Secrets](https://kubernetes.io/docs/concepts/configuration/secret/)
+- [External Secrets Operator](https://external-secrets.io/latest/)
+- [Vault Integration](https://developer.hashicorp.com/vault/docs/platform/k8s)
 
-External Secrets Operator
-
-Vault Integration
 
 ✅ Conclusion
 
