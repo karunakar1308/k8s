@@ -33,11 +33,17 @@ Feature flags
 1.1 Creating a ConfigMap From YAML
 
 apiVersion: v1
+
 kind: ConfigMap
+
 metadata:
+
   name: app-config
+
 data:
+
   APP_ENV: "production"
+  
   LOG_LEVEL: "info"
 
 kubectl apply -f configmap.yaml
