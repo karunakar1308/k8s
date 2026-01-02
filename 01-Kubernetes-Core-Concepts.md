@@ -19,10 +19,15 @@ Key Differences: Containers vs Virtual Machines
 Benefits of Containerization
 
 • Consistency across environments (dev, test, prod)
+
 • Faster deployment and scaling
+
 • Efficient resource utilization
+
 • Microservices architecture enablement
+
 • Version control for infrastructure
+
 • Simplified dependency management
 
 Learn more:
