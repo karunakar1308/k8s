@@ -211,10 +211,8 @@ A: To trace requests across microservices, identify bottlenecks, and troubleshoo
 
 Official Docs:
 
-Kubernetes Logging
+- [Kubernetes Logging](https://kubernetes.io/docs/concepts/cluster-administration/logging/)
+- [Prometheus](https://prometheus.io/docs/introduction/overview/)
+- [Metrics Server](https://github.com/kubernetes-sigs/metrics-server)
+- [Jaeger](https://www.jaegertracing.io/docs/)
 
-Prometheus
-
-Metrics Server
-
-Jaeger
