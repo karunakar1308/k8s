@@ -1,182 +1,200 @@
-Docker production scenarios
-1. Container works locally but fails in Kubernetes
-Scenario:
-A Node.js app runs fine when you do docker run on your laptop, but in Kubernetes the pod crashes with MODULE_NOT_FOUND for a dependency. The Dockerfile uses COPY . . and npm install without a proper .dockerignore. In CI, extra files (test folders, different lock files) get copied, causing a different dependency tree than your local build.
+# Production Troubleshooting Scenarios
 
-How to troubleshoot:
+This document contains scenario-based production issues and troubleshooting examples for Docker, Kubernetes, and ArgoCD. The format matches the structure used in the rest of this repository, with clear headings, numbered sections, and clean markdown presentation.
 
-Check container image contents in the running pod: kubectl exec -it <pod> -- ls node_modules and compare with local.
+## Docker Production Scenarios
 
-Inspect Docker build context size using docker build . output and ensure .dockerignore excludes node_modules, .git, and build artifacts.
+### 1. **Container works locally but fails in Kubernetes**
 
-Rebuild the image in the same environment as CI to reproduce.
+**Scenario:**  
+A Node.js application runs successfully with `docker run` on a developer laptop, but when deployed to Kubernetes, the pod goes into `CrashLoopBackOff` with `MODULE_NOT_FOUND` errors. The Dockerfile uses `COPY . .` and `npm install` without a proper `.dockerignore`. In CI, extra files such as local test artifacts and multiple lock files are copied into the image, which changes the dependency tree.
 
-Root cause:
-Inconsistent build context and missing .dockerignore meant CI produced a different image than local, leading to missing or mismatched dependencies at runtime.
+**How to troubleshoot:**
+- Check pod logs using `kubectl logs <pod-name>`
+- Inspect image contents using `kubectl exec -it <pod-name> -- ls -l`
+- Review the Dockerfile and `.dockerignore`
+- Rebuild the image in the same CI environment to reproduce the issue
 
-Fix:
-Add a proper .dockerignore, pin dependencies with package-lock.json, and ensure npm ci (or equivalent) runs during image build to make builds deterministic.
+**Root cause:**  
+The image built in CI is different from the image tested locally because unnecessary files were included in the build context.
 
-2. High CPU usage after Docker upgrade
-Scenario:
-After upgrading Docker Engine on production nodes, multiple Java containers start consuming high CPU even at low traffic. The application logs show frequent full GCs and thread contention.
+**Fix:**  
+Create a proper `.dockerignore`, use `npm ci` instead of `npm install`, and ensure the image build is deterministic across local and CI environments.
 
-How to troubleshoot:
+### 2. **High CPU usage after Docker Engine upgrade**
 
-Check container CPU limits and the JVM’s container awareness flags.
+**Scenario:**  
+After a Docker Engine upgrade on production worker nodes, Java-based applications begin consuming significantly more CPU even though traffic remains normal. Logs show frequent garbage collection cycles and thread contention.
 
-Run docker stats and JVM tools (jstat, jcmd) inside the container.
+**How to troubleshoot:**
+- Check container resource usage with `docker stats`
+- Verify JVM container-awareness settings
+- Compare Docker Engine and cgroup behavior before and after the upgrade
+- Inspect GC logs and thread dumps
 
-Confirm if the new Docker version changed default CPU quota behavior or cgroup driver.
+**Root cause:**  
+The JVM was not fully aligned with container CPU limits and assumed host-level CPU availability, which caused inefficient garbage collection and thread usage.
 
-Root cause:
-The JVM was not fully container‑aware and still assumed host CPU count, leading to an aggressive GC thread count and wrong ergonomics once Docker’s cgroup behavior changed.
+**Fix:**  
+Configure JVM options such as `-XX:+UseContainerSupport`, `-XX:MaxRAMPercentage`, and `-XX:ActiveProcessorCount` to match container resource limits.
 
-Fix:
-Add JVM options like -XX:+UseContainerSupport, set -XX:MaxRAMPercentage and -XX:ActiveProcessorCount to match container limits, then redeploy.
+### 3. **Image pull failures during production deployment**
 
-Kubernetes production scenarios
-3. Intermittent 5xx errors due to readiness probes
-Scenario:
-A stateless API randomly returns 503/502 during deployments under load, even though HPA and resources look fine. Pods restart count is low. Metrics show a spike in failed requests right after new pods come up.
+**Scenario:**  
+A new release is deployed successfully in staging but fails in production with `ImagePullBackOff`. The Kubernetes manifests are correct, and the image exists in the container registry.
 
-How to troubleshoot:
+**How to troubleshoot:**
+- Run `kubectl describe pod <pod-name>` and inspect image pull events
+- Verify image tag spelling and registry URL
+- Check whether the imagePullSecret exists in the namespace
+- Confirm registry permissions for the production cluster
 
-Check readinessProbe and livenessProbe settings in the Deployment.
+**Root cause:**  
+The production namespace is missing the required image pull secret, or the service account is not configured to use it.
 
-Describe pods: kubectl describe pod <pod> and look for probe failures.
+**Fix:**  
+Create the correct `imagePullSecret`, attach it to the service account or deployment, and standardize registry access configuration across environments.
 
-Inspect app startup time vs probe initialDelaySeconds and timeoutSeconds.
+## Kubernetes Production Scenarios
 
-Root cause:
-Readiness probe used a complex health endpoint that depends on external services (DB, third‑party APIs), and timeouts were too aggressive. New pods were marked ready before dependent services were actually usable, then flapped between ready and not‑ready, leading to traffic being routed to unstable pods.
+### 4. **Intermittent 5xx errors due to readiness probe issues**
 
-Fix:
-Simplify readiness endpoint to only check internal app readiness, increase initialDelaySeconds and timeoutSeconds, and ensure the app signals readiness only after it is truly ready to serve traffic.
+**Scenario:**  
+A stateless API starts returning intermittent 502 and 503 errors during rolling deployments. Resource usage looks healthy, and pods eventually become stable, but there is a clear error spike during rollout.
 
-4. Node pressure causing random pod evictions
-Scenario:
-In a production cluster, certain workloads get evicted randomly during traffic spikes, even though cluster CPU utilization is below 60%. Teams see Evicted pods with reasons like Evicted: The node was low on resource: memory.
+**How to troubleshoot:**
+- Check pod events with `kubectl describe pod <pod-name>`
+- Review readiness and liveness probe configuration
+- Compare application startup time against probe timings
+- Verify whether the readiness endpoint depends on external services
 
-How to troubleshoot:
+**Root cause:**  
+The readiness probe is too aggressive or relies on downstream systems, so pods are marked ready before they can reliably handle traffic.
 
-Check kubectl describe node <node> for memory pressure and eviction thresholds.
+**Fix:**  
+Use a lightweight internal readiness endpoint, tune `initialDelaySeconds`, `timeoutSeconds`, and `failureThreshold`, and ensure readiness reflects actual serving capability.
 
-Review pod requests and limits for memory.
+### 5. **Pod evictions caused by node memory pressure**
 
-Verify if there are “noisy neighbor” pods on affected nodes.
+**Scenario:**  
+During traffic spikes, some production pods are evicted even though average cluster CPU utilization is low. Teams notice `Evicted` pods with messages indicating low memory conditions on nodes.
 
-Root cause:
-Several pods had no memory limits and some had very low requests, so the scheduler packed them tightly on a few nodes. Under load, these pods exceeded physical memory, triggering kubelet evictions based on node eviction thresholds.
+**How to troubleshoot:**
+- Check node conditions using `kubectl describe node <node-name>`
+- Review pod memory `requests` and `limits`
+- Identify overcommitted nodes and noisy neighbor workloads
+- Inspect kubelet eviction thresholds
 
-Fix:
-Define proper requests and limits for memory for all workloads, use LimitRanges and ResourceQuotas to enforce, then gradually rebalance workloads via a rolling restart or descheduler.
+**Root cause:**  
+Several workloads have no memory limits or unrealistic requests, causing poor pod placement and node-level memory exhaustion during peak traffic.
 
-5. Service unavailable due to misconfigured NetworkPolicy
-Scenario:
-After introducing NetworkPolicies for security hardening, internal calls between microservices start failing with connection timeouts. No deployments changed, only the new NetworkPolicy manifests were applied.
+**Fix:**  
+Set realistic memory requests and limits, enforce policies with `LimitRange` and `ResourceQuota`, and rebalance workloads across nodes.
 
-How to troubleshoot:
+### 6. **Internal traffic breaks after NetworkPolicy changes**
 
-List policies in the namespace: kubectl get networkpolicy.
+**Scenario:**  
+After security hardening, services in the same cluster begin timing out when calling each other. No application code changed, but a new set of `NetworkPolicy` manifests was recently applied.
 
-Describe the impacted pods and look for matching pod selectors.
+**How to troubleshoot:**
+- List all policies with `kubectl get networkpolicy -A`
+- Review namespace and pod selectors carefully
+- Check whether a default-deny policy was introduced
+- Validate whether DNS, ingress, and monitoring traffic are still allowed
 
-Check if there is a default‑deny policy without an allow rule for required traffic.
+**Root cause:**  
+A default-deny policy was applied without complete allow rules for all required internal communication paths.
 
-Root cause:
-A default‑deny ingress NetworkPolicy was applied to the namespace, but the allow rules covered only traffic from specific labels and missed system components and some services. As a result, traffic that previously worked got dropped.
+**Fix:**  
+Add explicit allow policies for required service-to-service traffic, DNS, ingress controllers, and observability components. Test policy behavior in lower environments before production rollout.
 
-Fix:
-Add explicit allow policies for required namespaces (e.g., ingress controllers, DNS, monitoring) and for all required app‑to‑app flows, test in a non‑prod environment, then roll out gradually.
+### 7. **CrashLoopBackOff after ConfigMap update**
 
-6. CrashLoopBackOff after config change
-Scenario:
-A deployment that was stable for months starts CrashLooping immediately after a config change in ConfigMap. The pod log shows “invalid configuration” or “cannot parse YAML/JSON”.
+**Scenario:**  
+A deployment that was stable for months suddenly starts crashing right after a ConfigMap update. Logs show configuration parsing failures or missing required parameters.
 
-How to troubleshoot:
+**How to troubleshoot:**
+- Compare the new ConfigMap with the previous version from Git
+- Inspect pod logs for parsing or validation errors
+- Validate the config file syntax before deployment
+- Confirm whether the application requires a restart to consume new configuration
 
-Get previous ConfigMap revision from Git/history.
+**Root cause:**  
+The updated ConfigMap contains invalid YAML, JSON, or application-level configuration values that cause startup validation to fail.
 
-Compare current vs previous config.
+**Fix:**  
+Revert to the last known good configuration, add validation checks in CI, and roll out configuration changes gradually instead of updating all pods at once.
 
-Validate the config using the application’s built‑in validation or tools before starting.
+## ArgoCD Production Scenarios
 
-Root cause:
-ConfigMap was updated with a malformed configuration (e.g., wrong indentation, missing required field), and the application exits on startup validation failure.
+### 8. **Application shows OutOfSync even when resources look correct**
 
-Fix:
-Revert to the previously working ConfigMap from Git, add linting/validation in CI for config files, and use canary rollouts instead of full rollout for config changes.
+**Scenario:**  
+ArgoCD reports an application as `OutOfSync`, but the workloads are healthy and traffic is normal. Running sync fixes it temporarily, but the application soon returns to `OutOfSync`.
 
-ArgoCD production scenarios
-7. ArgoCD shows “OutOfSync” but resources look correct
-Scenario:
-ArgoCD Application status is OutOfSync even though the cluster resources appear correct and the app is serving traffic normally. Syncing again toggles to Synced briefly, then it flips back to OutOfSync without changes in Git.
+**How to troubleshoot:**
+- Open the diff view in ArgoCD
+- Compare desired and live manifests
+- Check for auto-injected annotations, labels, or sidecars
+- Review mutating webhooks and service mesh behavior
 
-How to troubleshoot:
+**Root cause:**  
+A mutating admission controller modifies the live resource after deployment, so ArgoCD keeps detecting drift between Git and the cluster.
 
-Check ArgoCD Application diff in the UI or via CLI.
+**Fix:**  
+Use ArgoCD `ignoreDifferences` or resource customizations for expected mutated fields, or adjust the mutating webhook behavior if appropriate.
 
-Look for auto‑generated fields (timestamps, annotations, status) in the live manifest.
+### 9. **Sync failure due to missing RBAC permissions**
 
-Confirm if any controllers (e.g., MutatingWebhook, sidecars) are mutating the manifest.
+**Scenario:**  
+A newly onboarded ArgoCD application fails to sync with errors showing that the ArgoCD application controller service account is forbidden from creating or updating resources in the target namespace.
 
-Root cause:
-A mutating admission controller (for example, a sidecar injector, or a service mesh like Istio) added annotations and fields that are not in Git. ArgoCD compares live vs desired and considers those differences as drift.
+**How to troubleshoot:**
+- Review ArgoCD application sync error details
+- Check ClusterRole, Role, RoleBinding, and ClusterRoleBinding configuration
+- Use `kubectl auth can-i` to validate access for the ArgoCD service account
+- Verify namespace-scoped versus cluster-scoped permissions
 
-Fix:
-Configure ArgoCD’s resource.customizations or ignoreDifferences to ignore specific paths (annotations, status fields) for those resources, or adjust the mutating webhook behavior if possible.
+**Root cause:**  
+The ArgoCD controller service account does not have the required permissions for the resource types or namespaces defined in the application.
 
-8. ArgoCD fails to sync due to RBAC in target cluster
-Scenario:
-New application onboarded via ArgoCD fails with sync errors like “forbidden: User ‘system:serviceaccount:argocd:argocd-application-controller’ cannot create resource X in namespace Y”.
+**Fix:**  
+Update Role or ClusterRole definitions and bindings to grant the required permissions while maintaining least privilege.
 
-How to troubleshoot:
+### 10. **Git commit reverted automatically after manual hotfix**
 
-Check ArgoCD project settings for the app and the service account used.
+**Scenario:**  
+During a Sev-1 incident, an engineer applies a manual hotfix directly in production using `kubectl apply` to restore service quickly. A few minutes later, ArgoCD reverts the change and the original issue returns.
 
-Inspect RBAC roles and rolebindings in the target cluster for the ArgoCD service account.
+**How to troubleshoot:**
+- Check whether automated sync is enabled in ArgoCD
+- Review ArgoCD audit logs and sync history
+- Compare the manual cluster change against the Git repository state
+- Inspect prune and self-heal settings
 
-Reproduce with kubectl auth can-i --as=system:serviceaccount:argocd:argocd-application-controller create deployment -n <ns>.
+**Root cause:**  
+ArgoCD treats direct cluster changes as configuration drift and automatically reconciles the cluster back to the state stored in Git.
 
-Root cause:
-ArgoCD’s service account in the target cluster lacks permissions for the new namespaces or resource types (e.g., CRDs like IngressRoute, PrometheusRule). The Application was added before RBAC was updated.
+**Fix:**  
+Pause auto-sync during emergency changes, or apply the hotfix through Git so ArgoCD reconciles to the intended updated state.
 
-Fix:
-Update ClusterRole/Role and bindings to grant required verbs on the necessary API groups and namespaces, following the least privilege principle, then trigger a resync.
+### 11. **Application stuck in Progressing due to health checks**
 
-9. Git commit reverted automatically after manual hotfix
-Scenario:
-During a Sev‑1 incident, an engineer applies a manual hotfix using kubectl apply directly in production to quickly unblock traffic. A few minutes later, ArgoCD syncs and silently reverts the hotfix to match Git, reintroducing the issue.
+**Scenario:**  
+An ArgoCD application remains in `Progressing` state for a long time even though Kubernetes shows all pods as ready and the application is serving traffic correctly.
 
-How to troubleshoot:
+**How to troubleshoot:**
+- Inspect resource-level health status in ArgoCD
+- Identify whether a child resource is marked `Unknown` or `Degraded`
+- Check whether the application uses a Custom Resource Definition
+- Review ArgoCD custom health check settings
 
-Check ArgoCD Application sync policy (auto vs manual).
+**Root cause:**  
+ArgoCD does not know how to evaluate health for a custom resource, so the application never transitions fully to `Healthy`.
 
-Review the Git history around the time of the incident.
+**Fix:**  
+Add a custom health check for the CRD in ArgoCD resource customizations, or adjust the resource configuration so its health can be evaluated correctly.
 
-Inspect ArgoCD audit logs to see who/what triggered the sync.
+## How to Use This File
 
-Root cause:
-ArgoCD is configured with automated sync and pruning. Manual in‑cluster changes are treated as drift and are overwritten to match Git, so the hotfix got rolled back.
-
-Fix:
-Update incident procedures: either pause auto‑sync for affected apps during incidents, or make hotfixes by committing to Git and letting ArgoCD sync them. Optionally use ArgoCD’s “allow empty” or “selfHeal” flags appropriately.
-
-10. ArgoCD Application stuck in Progressing due to health check
-Scenario:
-ArgoCD shows an Application in Progressing state for a long time, even though the Kubernetes Deployment shows all pods ready and traffic is flowing. Pipelines wait on ArgoCD health status and seem hung.
-
-How to troubleshoot:
-
-Check the health status at resource level in ArgoCD.
-
-See if any child resource (e.g., CustomResource of a service mesh, StatefulSet) is reported as Degraded or Unknown.
-
-Verify health check configuration for that CRD in ArgoCD.
-
-Root cause:
-ArgoCD’s default health check for a custom resource either does not exist or is misconfigured, so ArgoCD cannot determine “Healthy”, leaving the overall app status as Progressing.
-
-Fix:
-Define a custom health check Lua script in ArgoCD for that CRD (in resource.customizations.health.<group_kind>), or adjust the resource expectations so ArgoCD recognizes when it is healthy.
+This file is intended for interview preparation, production support learning, and real-world troubleshooting practice. Each scenario is written in a structured format so it can be quickly reviewed and expanded later with commands, YAML examples, and environment-specific notes.
