@@ -127,12 +127,18 @@
 79. **Performance Tuning**
 80. **Interview Preparation Tips**
 
----
+### PART 13: PRODUCTION TROUBLESHOOTING SCENARIOS
 
-## 🎯 Current Status
-
-✅ **Parts 1-4** - Fully documented with detailed explanations, examples, and interview scenarios  
-📋 **Parts 5-12** - Outlined in table of contents (detailed content coming soon)
+ 81. Docker: Works locally, fails in Kubernetes
+ 82. Docker: Performance regressions after engine upgrade
+ 83. Kubernetes: Intermittent 5xx due to readiness probes
+ 84. Kubernetes: Pod evictions under node pressure
+ 85. Kubernetes: NetworkPolicy breaking internal traffic
+ 86. Kubernetes: CrashLoopBackOff after config change
+ 87. ArgoCD: OutOfSync due to mutating webhooks
+ 88. ArgoCD: Sync failures due to missing RBAC
+ 89. ArgoCD: Manual hotfix reverted by auto-sync
+ 90. ArgoCD: Application stuck in Progressing state
 
 ---
 
